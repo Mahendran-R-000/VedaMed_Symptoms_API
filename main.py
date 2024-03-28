@@ -44,6 +44,33 @@ def synonyms_tree(term):
         synonyms += syn.lemma_names()
     return set(synonyms)
 
+def preprocess_user_symptoms(symptoms):
+    processed_symptoms = []
+    for user_sym in symptoms:
+        user_sym = user_sym.split()
+        str_sym_tree = set()
+        for comb in range(1, len(user_sym)+1):
+            for subset in combinations(user_sym, comb):
+                subset = ' '.join(subset)
+                subset = synonyms_tree(subset)
+                str_sym_tree.update(subset)
+        str_sym_tree.add(' '.join(user_sym))
+        processed_symptoms.append(' '.join(str_sym_tree).replace('_', ' '))
+    return processed_symptoms
+
+def find_matching_symptoms(user_symptoms):
+    found_symptoms = set()
+    for idx, data_sym in enumerate(dataset_symptoms_tree):
+        data_sym_split = data_sym.split()
+        for user_sym in user_symptoms:
+            count = 0
+            for symp in data_sym_split:
+                if symp in user_sym.split():
+                    count += 1
+            if count / len(data_sym_split) > 0.5:
+                found_symptoms.add(data_sym)
+    return list(found_symptoms)
+
 @app.route('/disease', methods=['POST'])
 def classify_tree():
     symptoms_tree = str(request.form.get('syptoms')).lower().split(',')
@@ -84,34 +111,10 @@ def classify_tree():
     return result_tree
 
 @app.route('/EnterSymptoms', methods=['POST'])
-def Enter_tree():
+def enter_tree():
     Symptoms_tree = str(request.form.get('user_symtoms')).lower().split(',')
-
-    user_symptoms_tree = []
-    for user_sym in Symptoms_tree:
-        user_sym = user_sym.split()
-        str_sym_tree = set()
-        for comb in range(1, len(user_sym)+1):
-            for subset in combinations(user_sym, comb):
-                subset = ' '.join(subset)
-                subset = synonyms_tree(subset)
-                str_sym_tree.update(subset)
-        str_sym_tree.add(' '.join(user_sym))
-        user_symptoms_tree.append(' '.join(str_sym_tree).replace('_', ' '))
-
-    found_symptoms = set()
-    for idx, data_sym in enumerate(dataset_symptoms_tree):
-        data_sym_split = data_sym.split()
-        for user_sym in user_symptoms_tree:
-            count = 0
-            for symp in data_sym_split:
-                if symp in user_sym.split():
-                    count += 1
-            if count / len(data_sym_split) > 0.5:
-                found_symptoms.add(data_sym)
-
-    found_symptoms = list(found_symptoms)
-
+    user_symptoms_tree = preprocess_user_symptoms(Symptoms_tree)
+    found_symptoms = find_matching_symptoms(user_symptoms_tree)
     result = json.dumps({'result': found_symptoms})
     return result
 
