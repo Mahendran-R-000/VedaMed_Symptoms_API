@@ -56,7 +56,7 @@ Before running the API, ensure you have the following installed:
 To run the VedaMed Symptom API locally, execute the following command in your terminal:
 
 ```
-python app.py
+python main.py
 ```
 
 The API will start running on `http://127.0.0.1:5000/`.
